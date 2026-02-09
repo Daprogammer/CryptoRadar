@@ -3,3 +3,5 @@ requests
 webdriver-manager
 selenium
 beautifulsoup4
+nlp
+vadersentiment
