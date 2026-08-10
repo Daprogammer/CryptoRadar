@@ -12,3 +12,4 @@ mysql-connector-python
 spacy>=3.7.0
 en-core-web-sm
 python-dotenv
+pandas
