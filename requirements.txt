@@ -20,3 +20,4 @@ flask-cors
 numpy
 joblib
 werkzeug
+binance
