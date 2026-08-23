@@ -13,3 +13,10 @@ spacy>=3.7.0
 en-core-web-sm
 python-dotenv
 pandas
+feedparser
+
+flask
+flask-cors
+numpy
+joblib
+werkzeug

@@ -3,6 +3,7 @@ import re
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 
+
 import requests
 import pandas as pd
 import yfinance
@@ -17,6 +18,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+import feedparser
 
 from database import migrate
 
@@ -130,8 +132,12 @@ def load_reddit_headers():
     """Returns headers required to bypass Reddit's bot block on .json endpoints."""
     return {
         # Reddit requires a unique, descriptive User-Agent identifier
-        "User-Agent": "python:CryptoRadar:v1.0 (by /u/CryptoRadarApp)",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Connection": "keep-alive",
+        "Referer": "https://www.google.com/",
+        "Upgrade-Insecure-Requests": "1",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,webp,image/apng,*/*;q=0.8",
     }
 
 def is_question(text):
@@ -192,37 +198,38 @@ def sentiment_analysis(lemm_text):
 def get_reddit_sentiments(conn, curse):
     """Fetches Reddit posts from r/CryptoMarkets and performs sentiment analysis."""
     headers = load_reddit_headers()
-    url = "https://www.reddit.com/r/CryptoMarkets.json"
+    url = "https://www.reddit.com/r/CryptoMarkets/.rss"
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers,timeout=10)
         response.raise_for_status()
-        posts = response.json()['data']['children']
+        feed = feedparser.parse(response.content)
 
         pattern = r"\b(bitcoin|ethereum|ether|dogecoin|btc|eth|doge|solana|sol|xrp|ripple|bnb|ada|cardano|dot|polkadot|litecoin|ltc|chainlink|link|ftx|luna|terra|avax|avalanche|matic|polygon)\b"
 
-        for p in posts:
-            title = p['data'].get('title', 'No Title')
-            body = p['data'].get('selftext', "")
-            upvotes = max(0, p['data'].get("ups", 0))
-            signal_text = title if len(title) > 30 else f"{title}. {body}"
+        for entry in feed.entries:
+            title = getattr(entry, 'title', 'No Title')
+            summary = getattr(entry, 'summary', '')
+
+            # Remove HTML tags from RSS content
+            clean_summary = re.sub(r'<[^>]+>', '', summary)
+            signal_text = title if len(title) > 30 else f"{title}. {clean_summary}"
             symbol = get_symbol(pattern, signal_text)
-            unix_time = p['data'].get('created_utc')
 
-            if not unix_time:
-                continue
-
-            dateob = datetime.fromtimestamp(unix_time, tz=timezone.utc)
-            time_str = dateob.strftime('%Y-%m-%d %H:%M:%S')
+            # Extract publication date
+            if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                time_str = datetime(*entry.published_parsed[:6], tzinfo=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                time_str = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
             if symbol and is_question(title):
                 senti_score = 0.5
-                model_weight = upvotes * 0.3
+                model_weight = 1.0
             elif symbol and not is_question(title):
                 lemmatized_text = lemmatize_text(signal_text)
                 raw_score = sentiment_analysis(lemmatized_text)
-                senti_score = (raw_score + 1) / 2  # Normalize [-1, 1] to [0, 1]
-                model_weight = upvotes * 1.0
+                senti_score = (raw_score + 1) / 2  # Normalize VADER [-1, 1] to [0, 1]
+                model_weight = 1.0
             else:
                 continue
 
