@@ -15,7 +15,7 @@
 ![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5?style=for-the-badge)
 ### 🤖 Hosted Model
 The trained predictive model is hosted and documented on Hugging Face:
-👉 **[View Crypto Pulse Brain on Hugging Face](https://huggingface.co/your-username/crypto-pulse-brain)**
+👉 **[View Crypto Pulse Brain on Hugging Face](https://huggingface.co/DaProgammer/crypto_radar_brain)**
 
 </p>
 
