@@ -1,10 +1,9 @@
-from os.path import exists
+import warnings
 
 from flask import request, Flask, render_template, jsonify, redirect, session, Response
 from flask_cors import CORS
 import mysql.connector
 import pandas as pd
-import numpy as np
 import joblib
 import yfinance as yf
 import json
@@ -12,6 +11,10 @@ import os
 
 from werkzeug.utils import secure_filename
 
+
+# Suppress deprecation warnings originating from third-party libraries
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=UserWarning, module="yfinance")
 app = Flask(__name__)
 CORS(app)
 app.secret_key = "my_random_kit"
@@ -355,22 +358,36 @@ def api_dashboard():
                     'sentiment_coin', 'sentiment_trend_coin','sentiment_btc','sentiment_trend_btc', 'rsi', 'volatility', 'dist_from_sma'
                 ]
                 X_live = live_df[features]
-                prediction = model.predict(X_live)[0]
-                confidence = float(np.max(model.predict_proba(X_live)[0]))
+                probabilities = model.predict_proba(X_live)[0]
+                bearish_prob = probabilities[0]
+                bullish_prob = probabilities[1]
+                print(bullish_prob,bearish_prob)
+
                 current_price = float(live_df['price'].values[0])
                 raw_vol = metrics['volatility_score'] / 100
                 volatility_factor = max(0.005, min(raw_vol, 0.10))
 
-                if prediction == 1:  # Bullish
+                if bullish_prob>=0.6:
+                    direction = "BULLISH"
+                    signal = "BUY"
                     target_price = current_price * (1 + volatility_factor)
-                else:  # Bearish
+                    confidence = bullish_prob
+                elif bearish_prob >= 0.6:
+                    direction = "BEARISH"
+                    signal = "SELL"
                     target_price = current_price * (1 - volatility_factor)
+                    confidence = bearish_prob
+                else:
+                    direction = "NEUTRAL"
+                    signal = "HOLD"
+                    target_price = current_price * (1 + volatility_factor)
+                    confidence = max(bearish_prob,bullish_prob)
 
                 ai_response = {
-                    "direction": "BULLISH" if prediction == 1 else "BEARISH",
+                    "direction": direction,
                     "confidence": round(confidence * 100, 1),
                     "accuracy":round(model_accuracy*100,1),
-                    "signal": "BUY" if prediction == 1 else "SELL",
+                    "signal": signal,
                     "target_price": round(target_price,2)
                 }
 
@@ -384,6 +401,7 @@ def api_dashboard():
                     label, color = "NEUTRAL", "text-accent-yellow"
                 sentiment_data = {"score": score, "label": label, "color": color}
             except Exception:
+                print("Not Enough data (need at least 50 rows of each and every data to make prediction)")
                 pass
 
 

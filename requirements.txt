@@ -21,3 +21,4 @@ numpy
 joblib
 werkzeug
 binance
+scikit-learn==1.8.0

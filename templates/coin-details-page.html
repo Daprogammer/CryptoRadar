@@ -181,9 +181,12 @@
 </div>
 </div>
 <div class="lg:w-[30%] flex flex-col gap-6">
-<div class="github-card p-5 md:p-6 flex-1 mt-6">
-    <p class="text-[10px] font-bold text-github-text-muted uppercase tracking-widest mb-4">AI Target Forecast</p>
-    
+<div class="github-card p-5 md:p-6 mt-6">
+    <!-- FIX: This flex container keeps the text on the right side! -->
+    <div class="flex justify-between items-center mb-4">
+        <p class="text-[10px] font-bold text-github-text-muted uppercase tracking-widest">AI Target Forecast</p>
+    </div>
+
     <div class="flex justify-between items-center mb-2">
         <span class="text-xs text-github-text-muted">Target (4h):</span>
         <span class="text-xl font-bold text-white" id="ai-target">--</span>
@@ -192,6 +195,10 @@
     <div class="flex justify-between items-center border-t border-github-border pt-2 mt-2">
         <span class="text-xs text-github-text-muted">Model Accuracy:</span>
         <span class="text-xs font-bold text-accent-blue" id="ai-accuracy">--%</span>
+    </div>
+    <div class="flex justify-between items-center border-t border-github-border pt-2.5 mt-2.5">
+        <span class="text-xs text-github-text-muted">Trend Bias:</span>
+        <span id="forecast-text-only" class="text-xs font-bold uppercase tracking-wider text-github-text-muted">WAITING...</span>
     </div>
 </div>
 <div class="github-card p-5 md:p-6 flex-1">
@@ -370,35 +377,53 @@ const API_URL = "http://127.0.0.1:5000/api/dashboard";
             if (barEl) barEl.style.width = aiData.confidence + "%";
 
             // Update Signal Badge (The Pill)
+            // Update Signal Badge (The Pill) and Forecast Text
             const pillEl = document.getElementById('signal-pill');
             const textEl = document.getElementById('signal-text');
+            const forecastTextEl = document.getElementById('forecast-text-only');
 
             if (pillEl && textEl && aiData.direction) {
-                // Update Text
+
+                // 1. Inject the text into both elements
+                if (forecastTextEl) forecastTextEl.innerText = aiData.direction;
                 textEl.innerText = aiData.direction + " SIGNAL";
 
-                // Update Colors based on Bullish/Bearish
+                // 2. Apply Colors based on Bullish / Bearish / Neutral
                 if (aiData.direction === 'BULLISH') {
-                    // Green Styling
+                    // Green Styling for Pill
                     pillEl.className = "self-start md:self-auto bg-[#238636]/10 text-[#2ea44f] border border-[#238636]/40 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2";
-                    // Update the dot (first child)
                     if(pillEl.firstElementChild) pillEl.firstElementChild.className = "w-1.5 h-1.5 rounded-full bg-[#2ea44f]";
-                } else {
-                    // Red Styling
+
+                    // Green Styling for Open Text
+                    if (forecastTextEl) forecastTextEl.className = "text-sm font-bold uppercase tracking-wide text-accent-green";
+                }
+                else if (aiData.direction === 'BEARISH') {
+                    // Red Styling for Pill
                     pillEl.className = "self-start md:self-auto bg-red-500/10 text-red-500 border border-red-500/40 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2";
-                    // Update the dot (first child)
                     if(pillEl.firstElementChild) pillEl.firstElementChild.className = "w-1.5 h-1.5 rounded-full bg-red-500";
+
+                    // Red Styling for Open Text
+                    if (forecastTextEl) forecastTextEl.className = "text-sm font-bold uppercase tracking-wide text-accent-red";
+                }
+                else {
+                    // Neutral Styling for Pill (Gray)
+                    pillEl.className = "self-start md:self-auto bg-gray-500/10 text-gray-400 border border-gray-500/40 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-2";
+                    if(pillEl.firstElementChild) pillEl.firstElementChild.className = "w-1.5 h-1.5 rounded-full bg-gray-400";
+
+                    // Neutral Styling for Open Text
+                    if (forecastTextEl) forecastTextEl.className = "text-sm font-bold uppercase tracking-wide text-github-text-muted";
                 }
 
+                // 3. Update Target Price values and colors
                 if (aiData.target_price) {
-                document.getElementById('ai-target').innerText = "$" + aiData.target_price.toLocaleString();
-                document.getElementById('ai-accuracy').innerText = aiData.accuracy + "% (Historical)";
-                
-                // Color the target price based on direction
-                const targetEl = document.getElementById('ai-target');
-                if (aiData.direction === 'BULLISH') targetEl.className = "text-xl font-bold text-accent-green";
-                else targetEl.className = "text-xl font-bold text-accent-red";
-            }
+                    document.getElementById('ai-target').innerText = "$" + aiData.target_price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                    document.getElementById('ai-accuracy').innerText = aiData.accuracy + "% (Historical)";
+
+                    const targetEl = document.getElementById('ai-target');
+                    if (aiData.direction === 'BULLISH') targetEl.className = "text-xl font-bold text-accent-green";
+                    else if (aiData.direction === 'BEARISH') targetEl.className = "text-xl font-bold text-accent-red";
+                    else targetEl.className = "text-xl font-bold text-github-text-muted";
+                }
             }
 
             // --- 4. UPDATE PROTOCOL INSIGHTS ---
@@ -521,7 +546,7 @@ const API_URL = "http://127.0.0.1:5000/api/dashboard";
         cryptoChart = new Chart(ctx, {
             type: 'line',
             data: { labels: [], datasets: [{ label: '{{symbol}}', data: [], borderColor: '#2ea44f', borderWidth: 2, fill: true, backgroundColor: gradient }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: true, // <--- ENABLE THIS
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: true,
         grid: { display: false }, // Hide vertical grid lines for cleaner look
         ticks: {
             color: '#8b949e', // Match your gray text theme

@@ -1,6 +1,8 @@
 import os
 import mysql.connector
+from dotenv import load_dotenv
 
+load_dotenv()
 def run_migration():
     """
     Connects to MySQL, ensures the _migrations table exists,
