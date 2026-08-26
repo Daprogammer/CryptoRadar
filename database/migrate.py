@@ -77,5 +77,7 @@ def run_migration():
         curse.close()
         conn.close()
 
+
+
 if __name__ == "__main__":
     run_migration()
