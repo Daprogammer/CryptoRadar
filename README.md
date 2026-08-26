@@ -2,7 +2,7 @@
 
 <p align="center">
 
-**A data-driven cryptocurrency intelligence platform combining market data, macroeconomic indicators, financial news, and social sentiment to identify bullish and bearish market trends.**
+<strong>A full-stack, data-driven cryptocurrency intelligence application combining real-time market data, macroeconomic indicators, NLP sentiment analysis, and machine learning to forecast market trend bias.</strong>
 
 </p>
 
@@ -13,6 +13,9 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-UI-06B6D4?style=for-the-badge\&logo=tailwindcss\&logoColor=white)
 ![Selenium](https://img.shields.io/badge/Selenium-Web_Scraping-43B02A?style=for-the-badge\&logo=selenium\&logoColor=white)
 ![spaCy](https://img.shields.io/badge/spaCy-NLP-09A3D5?style=for-the-badge)
+### 🤖 Hosted Model
+The trained predictive model is hosted and documented on Hugging Face:
+👉 **[View Crypto Pulse Brain on Hugging Face](https://huggingface.co/DaProgammer/crypto_radar_brain)**
 
 </p>
 
@@ -22,13 +25,11 @@
 
 **CryptoRadar** is a full-stack cryptocurrency forecasting and market intelligence platform designed to combine **quantitative market data with qualitative market sentiment**.
 
-Traditional cryptocurrency analysis often relies heavily on historical price charts and technical indicators. However, crypto markets are also strongly influenced by:
-
-* Community sentiment
-* Financial news
-* Market narratives
-* Macroeconomic conditions
-* Sudden changes in investor psychology
+CryptoRadar solves this by unifying:
+1. **Automated Data Ingestion:** Collects OHLCV market feeds (Binance), macroeconomic trends (US Dollar Index / DXY via Yahoo Finance), social discussions (Reddit RSS), and breaking financial news (CoinDesk web scraping).
+2. **Natural Language Processing (NLP):** Cleans, lemmatizes (spaCy), and scores textual sentiment using a custom crypto-domain VADER lexicon.
+3. **Predictive Machine Learning:** An ensemble model (`crypto_pulse_brain.pkl`) analyzing technical momentum (`SMA-50`, `RSI`), volatility, macroeconomic pressure, and multi-source sentiment trends to predict trend bias and short-term price targets.
+4. **Full-Stack Web Application:** A Flask web server serving interactive charts (Chart.js), dynamic REST APIs, server-side authentication, and CSV dataset exports
 
 CryptoRadar addresses this by building an automated data pipeline that collects **OHLCV market data, macroeconomic indicators, Reddit discussions, and financial news**, processes textual information using NLP, and presents the resulting information through an interactive web dashboard.
 
@@ -183,18 +184,43 @@ CryptoRadar follows a modular data-pipeline architecture consisting of a client-
 
 # ✨ Key Features
 
-## 🖥️ Frontend Dashboard
+### 🖥️ Full-Stack Web Dashboard
+- Dynamic Charting: Interactive price action visualization across multiple timeframes (1D, 1W, 1M) powered by Chart.js.
 
-The frontend is built using **HTML5, Vanilla JavaScript, Tailwind CSS, Bootstrap 5, and Chart.js**.
+- Predictive AI Engine: Live directional forecast (Bullish / Bearish / Neutral), model confidence score, historical accuracy rating, and 4-hour price targets.
 
-### 🔐 Authentication
+- Protocol Insights: Real-time 14-period Relative Strength Index (RSI), support line calculation, and dynamic multi-level volatility assessment (Low / Med / High).
 
-The application provides client-side authentication functionality through:
+- Macro & Market Metrics: Real-time 24h market cap, volume, circulating supply, and US Dollar Index (DXY) correlation.
 
-* Login
-* Signup
-* Session persistence
-* `localStorage`-based session handling
+- Server-Side Authentication: Secure registration and login workflows utilizing MySQL persistence and Flask session cookies.
+
+- Dataset Export: Instant on-the-fly CSV generation for offline backtesting and data analysis.
+
+### 🧠 Machine Learning & NLP Pipeline
+1. NLP Sentiment Engine
+- spaCy Lemmatization: Normalizes crypto discussions and news headlines to their root lemmas using en_core_web_sm.
+
+- Custom Crypto VADER Lexicon: Specialized scoring for domain-specific terminology such as breakout, liquidation, moon, rug pull, and accumulation.
+
+- Aggregated Sentiment Metrics: Computes exponential moving trends for coin-specific and global   Bitcoin sentiment.
+
+2. Predictive Feature Vector
+The trained classifier evaluates a 10-dimensional feature vector:
+```Python
+features = [
+    'volume',               # 24h Trading Volume (USDT)
+    'dxy_index',            # US Dollar Macro Index
+    'price_change_pct',     # Instantaneous Price Momentum
+    'sentiment_coin',       # Asset-Specific Sentiment
+    'sentiment_trend_coin', # Rolling Sentiment Moving Average
+    'sentiment_btc',        # Market Leader Sentiment
+    'sentiment_trend_btc',  # Global Sentiment Moving Average
+    'rsi',                  # 14-Period Relative Strength Index
+    'volatility',           # 24-Hour Rolling Price Standard Deviation
+    'dist_from_sma'         # Price Distance from 50-Period Moving Average
+]
+```
 
 ---
 
@@ -244,19 +270,6 @@ The search interface provides instant filtering based on:
 * Cryptocurrency symbol
 
 This allows users to quickly locate supported assets.
-
----
-
-### 🎨 Personalization
-
-CryptoRadar includes a personalization page where users can manage their profile preferences.
-
-The frontend also supports persistent:
-
-* Light mode
-* Dark mode
-
-Theme preferences are retained using client-side storage.
 
 ---
 
@@ -567,25 +580,44 @@ These mechanisms help prevent duplicate market and sentiment records from being 
 ```text
 CryptoRadar/
 │
-├── migration/
-│   ├── 001_create_tables.sql
-│   ├── ...
-│   └── ...
-│
 ├── database/
+|   ├── migration/
+│       ├── 001_create_tables.sql
+│       ├── ...
+│       └── ...
 │   └── migrate.py
+|
+├── models/
+|   └── crypto_pulse_brain.pkl
+|
 │
-├── frontend/
-│   ├── login.html
-│   ├── signup.html
+├── templates/
+│   ├── login-page.html
+│   ├── signup-page.html
 │   ├── dashboard.html
-│   ├── detail.html
-│   ├── search.html
-│   └── personalize.html
+│   ├── coin-details-page.html
+│   └── profile-page.html
 │
-├── extractor.py
+|
+|
+├── static/
+│   ├── uploads/
+│       ├── profiles
+|           ├── home_icon.png
+|           ├── ...
+|           └── ...
+|
+├── model_lab/
+│   ├── model.ipynb
+|   └── model_config.json
+|
+├── extractors
+│   ├── extracted.html
+│   ├── extractor.ipynb
+│   ├── extractor.py
+│   └── hourly_extractor.py
 ├── requirements.txt
-├── .env.example
+├── .env
 ├── LICENSE
 └── README.md
 ```
@@ -601,8 +633,8 @@ Before running CryptoRadar locally, make sure the following software is installe
 ### Required
 
 * Python **3.10+**
-* MySQL Server
-* Google Chrome
+* MySQL Server (via MySQL Community Server or XAMPP)
+* Google Chrome (required for Selenium news scraping)
 * Git
 
 Chrome is required for the Selenium-based CoinDesk extraction workflow.
@@ -612,11 +644,9 @@ Chrome is required for the Selenium-based CoinDesk extraction workflow.
 # 1️⃣ Clone the Repository
 
 ```bash
-git clone https://github.com/your-username/CryptoRadar.git
+git clone https://github.com/Daprogammer/CryptoRadar.git
 cd CryptoRadar
 ```
-
-Replace `your-username` with the GitHub account containing the repository.
 
 ---
 
@@ -675,10 +705,11 @@ Create a `.env` file in the project root.
 Example:
 
 ```env
-DB_HOST=localhost
+DB_HOST=127.0.0.1
+DB_PORT=3306
 DB_USER=root
 DB_PASSWORD=your_mysql_password
-DB_NAME=cryptoradar_db
+DB_NAME=crypto_radar_db
 
 INTERVAL=4h
 LIMIT=500
@@ -695,7 +726,6 @@ LIMIT=500
 | `INTERVAL`    | Market-data extraction interval      |
 | `LIMIT`       | Number of market records to retrieve |
 
-> **Security:** Never commit your real `.env` file or database credentials to GitHub. Use `.env.example` for repository documentation.
 
 ---
 
@@ -742,27 +772,28 @@ extractor.py
 
 ---
 
-# 8️⃣ Launch the Frontend
-
-The project uses static HTML pages for the client interface.
-
-You can open the pages directly in a browser or use a development server such as the **VS Code Live Server extension**.
+# 8️⃣ Launch the Web Application
+Start the Flask development server:
 
 Start with:
 
-```text
-frontend/login.html
+```Bash
+python app.py
 ```
 
-Main pages include:
+Open your browser and navigate to:
+
+[http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+
+URLs include:
 
 ```text
-login.html          → User login
-signup.html         → Registration
-dashboard.html      → Market dashboard
-search.html         → Cryptocurrency search
-detail.html         → Coin details & historical charts
-personalize.html    → Profile & theme preferences
+/                              → User login
+/signup                        → Registration
+/dashboard                     → Market dashboard
+/coin-details                  → Coin details & historical charts
+/profile                       → Profile & theme preferences
 ```
 
 ---
@@ -907,6 +938,7 @@ may require corresponding changes to the extraction pipeline.
 
 Current limitations include:
 
+* **Data Warm-Up Period:** The predictive AI engine calculates technical indicators like the 50-period Simple Moving Average (SMA). Therefore, it requires a strict minimum of 50 historical price records in the database to execute safely. If your database has fewer than 50 records, the dashboard will safely default to a `WAITING...` signal until `extractor.py` gathers enough data
 * Dependence on external data providers.
 * Web scraping can break when website structures change.
 * Sentiment analysis is dependent on the quality and coverage of the custom lexicon.
@@ -948,7 +980,7 @@ See the `LICENSE` file for more information.
 
 **Dhairya Amit Shah**
 
-GitHub: **Daprogammer**
+GitHub: @Daprogammer
 
 ---
 
